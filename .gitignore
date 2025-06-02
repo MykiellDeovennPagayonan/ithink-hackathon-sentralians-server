@@ -1,2 +1,48 @@
+# Node.js dependencies
+/node_modules/
+
+# Build output
+/dist/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
 .env
-node_modules
+.env.*.local
+
+# Editor directories and files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Uploadthing temp files (if any)
+.uploadthing-temp/
+
+# Optional coverage directory
+coverage/
+
+# Debugger history
+local.history/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Optional TS output (if using ts-node without build step)
+*.js
+*.js.map

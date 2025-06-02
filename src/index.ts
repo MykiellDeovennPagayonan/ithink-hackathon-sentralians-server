@@ -1,31 +1,19 @@
-import dotenv from "dotenv";
-dotenv.config();
+import express from 'express';
+import cors from 'cors';
 
-import express from "express";
-import cors from "cors";
-import { createRouteHandler } from "uploadthing/express";
-import { uploadRouter } from "./uploadthing";
+import corsOptions from './config/corsConfig';
+import uploadRoutes from './routes/uploadRoutes';
 
 const app = express();
 
-app.use(
-  cors({
-    origin: "http://localhost:3001",
-    methods: ["GET", "POST", "OPTIONS"],
-    credentials: true,
-  })
-);
+app.use(cors(corsOptions));
 
-app.use(
-  "/api/uploadthing",
-  createRouteHandler({
-    router: uploadRouter,
-    config: {
-      token: process.env.UPLOADTHING_TOKEN,
-    },
-  })
-);
+app.use(express.json());
 
-app.listen(3000, () => {
-  console.log("Server is running on http://localhost:3000");
+app.use('/api/uploadthing', uploadRoutes());
+
+app.use((req, res) => {
+  res.status(404).json({ message: 'Not found' });
 });
+
+export default app;
