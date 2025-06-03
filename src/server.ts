@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import http from 'http';
-import app from './index';
+const app = require('./index'); 
 
 const PORT = process.env.PORT || 3000;
 
