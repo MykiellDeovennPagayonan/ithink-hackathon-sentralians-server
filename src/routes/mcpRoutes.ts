@@ -73,6 +73,8 @@ router.post('/messages', async (req: Request, res: Response): Promise<void> => {
     
     const clientId = req.headers['x-client-id'] as string || 'default';
     let transport = transports.get(clientId);
+
+    console.log("transport:", transport)
     
     // Try to find any available transport if client ID doesn't match
     if (!transport && transports.size > 0) {
