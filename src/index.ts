@@ -1,9 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 
-import corsOptions from './config/corsConfig.js';
-import uploadRoutes from './routes/uploadRoutes.js';
-import mcpRoutes from './routes/mcpRoutes.js';
+import corsOptions from './config/corsConfig';
+import uploadRoutes from './routes/uploadRoutes';
+import mcpRoutes from './routes/mcpRoutes';
+import aiRoutes from './routes/openAIRoutes';
 
 const app = express();
 
@@ -14,6 +15,8 @@ app.use('/api/uploadthing', uploadRoutes());
 
 app.use('/api/mcp', mcpRoutes);
 
+app.use('/api/ai', aiRoutes);
+
 app.get('/api', (req, res) => {
   res.json({
     message: 'API Server with MCP Support',
@@ -23,6 +26,11 @@ app.get('/api', (req, res) => {
         sse: '/api/mcp/sse',
         messages: '/api/mcp/messages',
         health: '/api/mcp/health'
+      },
+      ai: {
+        chat: '/api/ai/chat',
+        approve: '/api/ai/chat/approve',
+        tools: '/api/ai/tools'
       }
     }
   });

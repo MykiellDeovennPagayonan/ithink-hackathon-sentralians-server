@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { fibonacci } from '../services/fibonacci.js';
+import { fibonacci } from '../services/fibonacci';
 
 export const mcpServer = new McpServer({
   name: 'Fibonacci Server',
@@ -14,6 +14,7 @@ mcpServer.tool(
     n: z.number().int().min(0).describe('The position in the Fibonacci sequence'),
   },
   async ({ n }) => {
+    console.log(`MCP tool called: getFibonacci(${n})`);
     const result = fibonacci(n);
     return {
       content: [
@@ -33,6 +34,7 @@ mcpServer.tool(
     count: z.number().int().min(1).max(50).describe('Number of Fibonacci numbers to generate'),
   },
   async ({ count }) => {
+    console.log(`MCP tool called: fibonacciSequence(${count})`);
     const sequence = [];
     for (let i = 0; i < count; i++) {
       sequence.push(fibonacci(i));
@@ -47,3 +49,5 @@ mcpServer.tool(
     };
   }
 );
+
+console.log('MCP Server initialized with tools:', ['getFibonacci', 'fibonacciSequence']);
