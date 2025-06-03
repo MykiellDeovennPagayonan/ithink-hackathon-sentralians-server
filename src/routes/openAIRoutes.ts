@@ -68,9 +68,6 @@ router.post('/chat', async (req: Request, res: Response): Promise<void> => {
       allowed_tools: ['getFibonacci', 'fibonacciSequence'],
     };
 
-    console.log('⮕ Asking GPT to use MCP at:', getMcpServerUrl());
-    console.log('⮕ Asking GPT to use MCP label:', mcpTool.server_label);
-
     if (allowedTools && allowedTools.length > 0) {
       mcpTool.allowed_tools = allowedTools;
     }

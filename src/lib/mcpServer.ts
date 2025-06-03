@@ -4,7 +4,6 @@ import { fibonacci } from '../services/fibonacci';
 
 export const mcpServer = new McpServer({
   name: 'Fibonacci Server',
-  label: 'fibonacci_server',
   version: '1.0.0',
 });
 
@@ -51,5 +50,4 @@ mcpServer.tool(
   }
 );
 
-console.log('MCP label is:', mcpServer);
-console.log('MCP Server initialized with tools:', ['getFibonacci', 'fibonacciSequence']);
+console.log('MCP Server instance initialized with tools:', ['getFibonacci', 'fibonacciSequence']);
