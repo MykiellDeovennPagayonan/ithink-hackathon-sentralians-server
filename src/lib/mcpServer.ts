@@ -51,4 +51,5 @@ mcpServer.tool(
   }
 );
 
+console.log('MCP label is:', mcpServer);
 console.log('MCP Server initialized with tools:', ['getFibonacci', 'fibonacciSequence']);

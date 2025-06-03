@@ -1,5 +1,3 @@
-// routes/mcpRoutes.ts
-
 import express, { Request, Response, Router } from 'express';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { mcpServer } from '../lib/mcpServer';
@@ -63,13 +61,11 @@ router.post('/messages', async (req: Request, res: Response) => {
     console.log('Transport map keys:', Array.from(transports.keys()));
     console.log('Body:', JSON.stringify(req.body, null, 2));
 
-    // If the client didn’t send x-client-id, default to the FIXED_CLIENT_ID
     const clientId = (req.headers['x-client-id'] as string) || FIXED_CLIENT_ID;
     let transport = transports.get(clientId);
 
-    console.log('Lookup transport by key:', clientId, '->', transport);
+    console.log('Lookup transport by key:');
 
-    // If that fails, and we only ever expect a single connection, you can fall back:
     if (!transport && transports.size > 0) {
       transport = Array.from(transports.values())[0];
       console.log('Using fallback transport');
