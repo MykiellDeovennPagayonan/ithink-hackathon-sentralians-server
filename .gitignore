@@ -46,3 +46,5 @@ logs/
 # Optional TS output (if using ts-node without build step)
 *.js
 *.js.map
+
+api/
