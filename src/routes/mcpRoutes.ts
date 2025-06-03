@@ -60,6 +60,7 @@ router.post('/messages', async (req: Request, res: Response) => {
     console.log('POST x-client-id header:', req.headers['x-client-id']);
     console.log('Transport map keys:', Array.from(transports.keys()));
     console.log('Body:', JSON.stringify(req.body, null, 2));
+    console.log('Request Headers:', req.headers)
 
     const clientId = (req.headers['x-client-id'] as string) || FIXED_CLIENT_ID;
     let transport = transports.get(clientId);
