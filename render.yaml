@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: ithink-hackathon-mcp-server
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    env: node
+    region: singapore
+    plan: free
+    autoDeploy: true
