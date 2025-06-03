@@ -1,5 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import { openaiClient, getMcpServerUrl, testMcpConnection } from '../lib/openAI';
+import { Tool } from 'openai/resources/responses/responses';
 
 const router: Router = express.Router();
 
@@ -49,12 +50,12 @@ router.post('/chat', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const mcpTool: any = {
+    const mcpTool: Tool =         {
       type: "mcp",
       server_label: "fibonacci_server",
       server_url: getMcpServerUrl(),
       require_approval: requireApproval ? "always" : "never",
-    };
+    }
 
     if (allowedTools && allowedTools.length > 0) {
       mcpTool.allowed_tools = allowedTools;

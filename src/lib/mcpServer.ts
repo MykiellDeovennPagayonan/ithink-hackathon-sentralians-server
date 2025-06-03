@@ -4,6 +4,7 @@ import { fibonacci } from '../services/fibonacci';
 
 export const mcpServer = new McpServer({
   name: 'Fibonacci Server',
+  label: 'fibonacci_server',
   version: '1.0.0',
 });
 
