@@ -10,5 +10,5 @@
       "src": "/api/(.*)",
       "dest": "/src/server.ts"
     }
-  ],
+  ]
 }
