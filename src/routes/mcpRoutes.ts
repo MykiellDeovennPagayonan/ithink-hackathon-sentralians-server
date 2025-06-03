@@ -28,23 +28,29 @@ router.get('/sse', async (req: Request, res: Response): Promise<void> => {
     
     const clientId = req.headers['x-client-id'] as string || `client_${Date.now()}`;
     
+    // Create the transport with the correct message endpoint
     const transport = new SSEServerTransport('/api/mcp/messages', res);
     transports.set(clientId, transport);
     
     console.log(`Connecting MCP server for client: ${clientId}`);
     
+    // This is the key - properly connect your mcpServer to the transport
     await mcpServer.connect(transport);
     
     console.log('MCP server connected successfully via SSE');
     
+    // Handle client disconnect
     req.on('close', () => {
       console.log(`Client disconnected: ${clientId}`);
       transports.delete(clientId);
+      // Properly disconnect the server
+      mcpServer.close().catch(console.error);
     });
     
     req.on('error', (error) => {
       console.error(`SSE connection error for client ${clientId}:`, error);
       transports.delete(clientId);
+      mcpServer.close().catch(console.error);
     });
     
   } catch (error) {
@@ -61,12 +67,14 @@ router.get('/sse', async (req: Request, res: Response): Promise<void> => {
 router.post('/messages', async (req: Request, res: Response): Promise<void> => {
   try {
     console.log('MCP POST message received');
+    console.log('Method:', req.body.method);
     console.log('Headers:', req.headers);
     console.log('Body:', JSON.stringify(req.body, null, 2));
     
     const clientId = req.headers['x-client-id'] as string || 'default';
     let transport = transports.get(clientId);
     
+    // Try to find any available transport if client ID doesn't match
     if (!transport && transports.size > 0) {
       transport = Array.from(transports.values())[0];
       console.log('Using fallback transport');
@@ -76,11 +84,13 @@ router.post('/messages', async (req: Request, res: Response): Promise<void> => {
       console.error(`No transport available. Active transports: ${transports.size}`);
       res.status(424).json({ 
         error: 'MCP transport not initialized',
-        activeTransports: transports.size 
+        activeTransports: transports.size,
+        message: 'Please establish SSE connection first'
       });
       return;
     }
     
+    // Let the transport handle the message - this routes to your mcpServer tools
     await transport.handlePostMessage(req, res);
     
   } catch (error) {

@@ -101,7 +101,7 @@ router.post('/chat/approve', async (req: Request, res: Response): Promise<void> 
     }
 
     const response = await openaiClient.responses.create({
-      model: "gpt-4.1",
+      model: "gpt-4o-mini",
       tools: [{
         type: "mcp",
         server_label: "fibonacci_server",
