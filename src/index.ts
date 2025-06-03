@@ -11,6 +11,10 @@ const app = express();
 app.use(cors(corsOptions));
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.send('Server is up!');
+});
+
 app.use('/api/uploadthing', uploadRoutes());
 
 app.use('/api/mcp', mcpRoutes);
