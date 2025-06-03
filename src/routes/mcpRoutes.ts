@@ -1,62 +1,54 @@
+// routes/mcpRoutes.ts
+
 import express, { Request, Response, Router } from 'express';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { mcpServer } from '../lib/mcpServer';
 
 const router: Router = express.Router();
 const transports = new Map<string, SSEServerTransport>();
+const FIXED_CLIENT_ID = 'fibonacci_client_123';
 
 router.use((req: Request, res: Response, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-client-id');
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
-  
   next();
 });
 
-router.get('/sse', async (req: Request, res: Response): Promise<void> => {
+router.get('/sse', async (req: Request, res: Response) => {
   try {
+    const clientId = (req.headers['x-client-id'] as string) || FIXED_CLIENT_ID;
+
     console.log('SSE connection requested from:', req.headers['user-agent']);
-    
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    
-    const clientId = req.headers['x-client-id'] as string || `client_${Date.now()}`;
-    
-    // Create the transport with the correct message endpoint
-    const transport = new SSEServerTransport('/api/mcp/messages', res);
+    console.log('Registering transport under key:', clientId);
+
+    const messagesUrl = 'https://ithink-hackathon-sentralians-server.onrender.com/api/mcp/messages';
+
+    const transport = new SSEServerTransport(messagesUrl, res);
     transports.set(clientId, transport);
-    
-    console.log(`Connecting MCP server for client: ${clientId}`);
-    
-    // This is the key - properly connect your mcpServer to the transport
+    console.log('All active transports:', Array.from(transports.keys()));
+
     await mcpServer.connect(transport);
-    
-    console.log('MCP server connected successfully via SSE');
-    
-    // Handle client disconnect
+    console.log(`MCP server connected via SSE [clientId=${clientId}]`);
+
     req.on('close', () => {
       console.log(`Client disconnected: ${clientId}`);
       transports.delete(clientId);
-      // Properly disconnect the server
       mcpServer.close().catch(console.error);
     });
-    
     req.on('error', (error) => {
-      console.error(`SSE connection error for client ${clientId}:`, error);
+      console.error(`SSE connection error for ${clientId}:`, error);
       transports.delete(clientId);
       mcpServer.close().catch(console.error);
     });
-    
   } catch (error) {
     console.error('MCP SSE connection error:', error);
     if (!res.headersSent) {
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to establish MCP connection',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -64,41 +56,41 @@ router.get('/sse', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-router.post('/messages', async (req: Request, res: Response): Promise<void> => {
+router.post('/messages', async (req: Request, res: Response) => {
   try {
     console.log('MCP POST message received');
-    console.log('Method:', req.body.method);
-    console.log('Headers:', req.headers);
+    console.log('POST x-client-id header:', req.headers['x-client-id']);
+    console.log('Transport map keys:', Array.from(transports.keys()));
     console.log('Body:', JSON.stringify(req.body, null, 2));
-    
-    const clientId = req.headers['x-client-id'] as string || 'default';
+
+    // If the client didn’t send x-client-id, default to the FIXED_CLIENT_ID
+    const clientId = (req.headers['x-client-id'] as string) || FIXED_CLIENT_ID;
     let transport = transports.get(clientId);
 
-    console.log("transport:", transport)
-    
-    // Try to find any available transport if client ID doesn't match
+    console.log('Lookup transport by key:', clientId, '->', transport);
+
+    // If that fails, and we only ever expect a single connection, you can fall back:
     if (!transport && transports.size > 0) {
       transport = Array.from(transports.values())[0];
       console.log('Using fallback transport');
     }
-    
+
     if (!transport) {
-      console.error(`No transport available. Active transports: ${transports.size}`);
-      res.status(424).json({ 
+      console.error(`No transport found for key=${clientId}. Active transports: ${transports.size}`);
+      res.status(424).json({
         error: 'MCP transport not initialized',
         activeTransports: transports.size,
-        message: 'Please establish SSE connection first'
+        message: 'Please open the SSE connection first with x-client-id set'
       });
       return;
     }
-    
-    // Let the transport handle the message - this routes to your mcpServer tools
+
+    // Let the transport decode the JSON-RPC payload and route it to mcpServer
     await transport.handlePostMessage(req, res);
-    
   } catch (error) {
     console.error('MCP message handling error:', error);
     if (!res.headersSent) {
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to handle MCP message',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
