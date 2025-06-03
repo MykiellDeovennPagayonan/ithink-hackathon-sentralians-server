@@ -9,7 +9,10 @@ const FIXED_CLIENT_ID = 'fibonacci_client_123';
 router.use((req: Request, res: Response, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-client-id');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, x-client-id',
+  );
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -24,7 +27,8 @@ router.get('/sse', async (req: Request, res: Response) => {
     console.log('SSE connection requested from:', req.headers['user-agent']);
     console.log('Registering transport under key:', clientId);
 
-    const messagesUrl = 'https://ithink-hackathon-sentralians-server.onrender.com/api/mcp/messages';
+    const messagesUrl =
+      'https://ithink-hackathon-sentralians-server.onrender.com/api/mcp/messages';
 
     const transport = new SSEServerTransport(messagesUrl, res);
     transports.set(clientId, transport);
@@ -35,20 +39,33 @@ router.get('/sse', async (req: Request, res: Response) => {
 
     req.on('close', () => {
       console.log(`Client disconnected: ${clientId}`);
+      const transportToClose = transports.get(clientId);
+      if (transportToClose) {
+        // If the transport itself has a close method, call it.
+        // For example: if (typeof transportToClose.close === 'function') { transportToClose.close(); }
+        // Consult the SDK documentation for the proper way to clean up a single SSEServerTransport
+        // without closing the entire McpServer.
+        // For now, just removing it from the map is the first step.
+      }
       transports.delete(clientId);
-      mcpServer.close().catch(console.error);
+      console.log(
+        `Transport for ${clientId} removed. Active transports: ${Array.from(transports.keys())}`,
+      );
     });
+
     req.on('error', (error) => {
       console.error(`SSE connection error for ${clientId}:`, error);
       transports.delete(clientId);
-      mcpServer.close().catch(console.error);
+      console.log(
+        `Transport for ${clientId} removed due to error. Active transports: ${Array.from(transports.keys())}`,
+      );
     });
   } catch (error) {
     console.error('MCP SSE connection error:', error);
     if (!res.headersSent) {
       res.status(500).json({
         error: 'Failed to establish MCP connection',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -60,7 +77,7 @@ router.post('/messages', async (req: Request, res: Response) => {
     console.log('POST x-client-id header:', req.headers['x-client-id']);
     console.log('Transport map keys:', Array.from(transports.keys()));
     console.log('Body:', JSON.stringify(req.body, null, 2));
-    console.log('Request Headers:', req.headers)
+    console.log('Request Headers:', req.headers);
 
     const clientId = (req.headers['x-client-id'] as string) || FIXED_CLIENT_ID;
     let transport = transports.get(clientId);
@@ -73,11 +90,13 @@ router.post('/messages', async (req: Request, res: Response) => {
     }
 
     if (!transport) {
-      console.error(`No transport found for key=${clientId}. Active transports: ${transports.size}`);
+      console.error(
+        `No transport found for key=${clientId}. Active transports: ${transports.size}`,
+      );
       res.status(424).json({
         error: 'MCP transport not initialized',
         activeTransports: transports.size,
-        message: 'Please open the SSE connection first with x-client-id set'
+        message: 'Please open the SSE connection first with x-client-id set',
       });
       return;
     }
@@ -89,7 +108,7 @@ router.post('/messages', async (req: Request, res: Response) => {
     if (!res.headersSent) {
       res.status(500).json({
         error: 'Failed to handle MCP message',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -103,8 +122,8 @@ router.get('/health', (req: Request, res: Response): void => {
       version: '1.0.0',
       connected: transports.size > 0,
       activeConnections: transports.size,
-      transports: Array.from(transports.keys())
-    }
+      transports: Array.from(transports.keys()),
+    },
   };
   console.log('Health check:', healthResponse);
   res.json(healthResponse);
@@ -116,12 +135,12 @@ router.get('/debug/tools', (req: Request, res: Response): void => {
       message: 'MCP Server is initialized',
       tools: ['getFibonacci', 'fibonacciSequence'],
       serverName: 'Fibonacci Server',
-      version: '1.0.0'
+      version: '1.0.0',
     });
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Debug endpoint failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
