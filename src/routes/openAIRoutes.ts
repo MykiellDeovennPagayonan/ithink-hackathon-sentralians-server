@@ -46,7 +46,7 @@ async function callOpenAIFunction(
 }
 
 /**
- * Route 1: Validate a student’s solution (image URL + question text)
+ * Route 1: Validate a student's solution (image URL + question text)
  *
  * Expects JSON body:
  * {
@@ -58,7 +58,16 @@ async function callOpenAIFunction(
  * {
  *   function_call: {
  *     name: string,
- *     arguments: { question: string; image_url: string }
+ *     arguments: {
+ *       process: string,
+ *       where_wrong: string[],
+ *       steps: Array<{
+ *         mathjs: string,
+ *         latex: string,
+ *         step_number: number,
+ *         description: string
+ *       }>
+ *     }
  *   }
  * }
  */
@@ -78,8 +87,10 @@ router.post(
       const message = await callOpenAIFunction(userPrompt, validateSolution);
 
       if (message.tool_calls) {
-        const argumentsInitial = JSON.parse(message.tool_calls[0].function.arguments);
-        message.tool_calls[0].function.arguments = argumentsInitial
+        const argumentsInitial = JSON.parse(
+          message.tool_calls[0].function.arguments,
+        );
+        message.tool_calls[0].function.arguments = argumentsInitial;
         res.json({ function_call: message.tool_calls[0] });
         return;
       }
@@ -97,16 +108,23 @@ router.post(
  *
  * Expects JSON body:
  * {
- *   topic: string,
- *   reference_question: string,
- *   num_questions: number
+ *   topic?: string,
+ *   reference_question?: string,
+ *   num_questions?: number (default: 1, max: 5)
  * }
+ * Note: At least one of topic or reference_question must be provided
  *
  * Responds with:
  * {
  *   function_call: {
  *     name: string,
- *     arguments: { topic: string; reference_question: string; num_questions: number }
+ *     arguments: {
+ *       problems: Array<{
+ *         difficulty: "easy" | "medium" | "hard",
+ *         topic: string,
+ *         problem_latex: string
+ *       }>
+ *     }
  *   }
  * }
  */
@@ -114,19 +132,53 @@ router.post(
   '/generate-problems',
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { topic, reference_question, num_questions } = req.body;
-      if (!reference_question || !topic || typeof num_questions !== 'number') {
+      const { topic, reference_question, num_questions = 1 } = req.body;
+
+      if (!topic?.trim() && !reference_question?.trim()) {
         res.status(400).json({
           error:
-            "'topic', 'reference_question', and 'num_questions' are required",
+            "At least one of 'topic' or 'reference_question' must be provided",
         });
         return;
       }
 
-      const userPrompt = `Generate ${num_questions} new math problems. Use reference question:\n${reference_question}\n\nIf additional topic context is needed, use:\n${topic}\n\nReturn only a JSON function call payload.`;
+      if (
+        typeof num_questions !== 'number' ||
+        num_questions < 1 ||
+        num_questions > 5
+      ) {
+        res.status(400).json({
+          error: "'num_questions' must be a number between 1 and 5",
+        });
+        return;
+      }
+
+      let userPrompt = `Generate ${num_questions} new math problems.`;
+
+      if (reference_question?.trim()) {
+        userPrompt += ` Use reference question:\n${reference_question.trim()}`;
+      }
+
+      if (topic?.trim()) {
+        userPrompt += reference_question?.trim()
+          ? `\n\nIf additional topic context is needed, use:\n${topic.trim()}`
+          : ` Based on the topic:\n${topic.trim()}`;
+      }
+
+      userPrompt += `\n\nReturn only a JSON function call payload.`;
+
       const message = await callOpenAIFunction(userPrompt, generateProblems);
 
-      res.json({ function_call: message.function_call });
+      if (message.tool_calls) {
+        const argumentsInitial = JSON.parse(
+          message.tool_calls[0].function.arguments,
+        );
+        message.tool_calls[0].function.arguments = argumentsInitial;
+        res.json({ function_call: message.tool_calls[0] });
+        return;
+      }
+
+      res.json({ function_call: message });
     } catch (error) {
       console.error('Error in /generate-problems:', error);
       res.status(500).json({ error: 'Failed to call generate_problems' });
@@ -147,7 +199,15 @@ router.post(
  * {
  *   function_call: {
  *     name: string,
- *     arguments: { question: string; image_url?: string }
+ *     arguments: {
+ *       process: string,
+ *       steps: Array<{
+ *         mathjs: string,
+ *         latex: string,
+ *         step_number: number,
+ *         description: string
+ *       }>
+ *     }
  *   }
  * }
  */
@@ -168,7 +228,17 @@ router.post(
       userPrompt += `\n\nReturn only a JSON function call payload.`;
 
       const message = await callOpenAIFunction(userPrompt, solveProblem);
-      res.json({ function_call: message.function_call });
+
+      if (message.tool_calls) {
+        const argumentsInitial = JSON.parse(
+          message.tool_calls[0].function.arguments,
+        );
+        message.tool_calls[0].function.arguments = argumentsInitial;
+        res.json({ function_call: message.tool_calls[0] });
+        return;
+      }
+
+      res.json({ function_call: message });
     } catch (error) {
       console.error('Error in /solve-problem:', error);
       res.status(500).json({ error: 'Failed to call solve_problem' });
