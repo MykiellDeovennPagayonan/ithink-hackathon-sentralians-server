@@ -4,24 +4,36 @@ const generateProblems: ChatCompletionTool = {
   type: "function",
   function: {
     name: "generate_problems",
-    description: "Generate a list of new math problems based on a reference question or topic. Returns an array where each entry has difficulty, topic, and the problem statement in LaTeX.",
+    description: "Returns a list of newly generated math problems. Each problem object includes its difficulty level, topic tag, and the problem statement in LaTeX.",
     parameters: {
       type: "object",
       properties: {
-        topic: {
-          type: "string",
-          description: "High‐level topic (e.g., 'integration by parts')."
-        },
-        reference_question: {
-          type: "string",
-          description: "A sample problem (in plain text or LaTeX) to base new problems on. If provided, this takes priority over topic."
-        },
-        num_questions: {
-          type: "integer",
-          description: "Number of distinct problems to generate."
+        problems: {
+          type: "array",
+          description: "Array of generated problem objects. Each entry has difficulty, topic, and LaTeX text.",
+          items: {
+            type: "object",
+            properties: {
+              difficulty: {
+                type: "string",
+                enum: ["easy", "medium", "hard"],
+                description: "Difficulty rating of this problem."
+              },
+              topic: {
+                type: "string",
+                description: "The topic or category this problem belongs to."
+              },
+              problem_latex: {
+                type: "string",
+                description: "The full problem statement formatted in LaTeX."
+              }
+            },
+            required: ["difficulty", "topic", "problem_latex"],
+            additionalProperties: false
+          }
         }
       },
-      required: ["topic", "reference_question", "num_questions"],
+      required: ["problems"],
       additionalProperties: false
     }
   }

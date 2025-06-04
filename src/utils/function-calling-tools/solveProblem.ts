@@ -4,20 +4,43 @@ const solveProblem: ChatCompletionTool = {
   type: "function",
   function: {
     name: "solve_problem",
-    description: "Solve a math problem (text or image URL). Returns the process (logic and LaTeX) and a step list (MathJS functions, LaTeX equations, step numbers, and descriptions).",
+    description: "Returns the full solution process for a given question (text or image). Includes logical reasoning with LaTeX (no numeric substitution) and a list of steps formatted for MathJS (with LaTeX, step count, and description).",
     parameters: {
       type: "object",
       properties: {
-        question: {
+        process: {
           type: "string",
-          description: "The problem statement (plain text or LaTeX) to solve."
+          description: "Natural-language explanation of the solution’s logic, interwoven with LaTeX expressions (without numeric values)."
         },
-        image_url: {
-          type: "string",
-          description: "Optional: a publicly accessible URL to an image of the problem if it is handwritten or typeset."
+        steps: {
+          type: "array",
+          description: "Sequence of step objects for MathJS, each containing a MathJS expression, its LaTeX form, step number, and a plain-language description.",
+          items: {
+            type: "object",
+            properties: {
+              mathjs: {
+                type: "string",
+                description: "A MathJS-compatible expression (using symbolic variables only)."
+              },
+              latex: {
+                type: "string",
+                description: "LaTeX representation of that symbolic expression."
+              },
+              step_number: {
+                type: "integer",
+                description: "Index of the step in the overall solution."
+              },
+              description: {
+                type: "string",
+                description: "Plain-language explanation of what happens in this step (no numeric substitution)."
+              }
+            },
+            required: ["mathjs", "latex", "step_number", "description"],
+            additionalProperties: false
+          }
         }
       },
-      required: ["question"],
+      required: ["process", "steps"],
       additionalProperties: false
     }
   }
