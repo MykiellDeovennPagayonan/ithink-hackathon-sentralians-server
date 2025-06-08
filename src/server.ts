@@ -4,7 +4,7 @@ dotenv.config();
 import http from 'http';
 const app = require('./index'); 
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000;
 
 const server = http.createServer(app);
 
