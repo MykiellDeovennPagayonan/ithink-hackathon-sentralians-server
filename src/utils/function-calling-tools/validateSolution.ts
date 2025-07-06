@@ -9,20 +9,25 @@ const validateSolution: ChatCompletionTool = {
     parameters: {
       type: 'object',
       properties: {
+        image_description: {
+          type: 'string',
+          description:
+            'Describe the image the user has attached basically their solution, do not include the question. let me know if the image is valid and is indeed answer the question',
+        },
         user_solution: {
           type: 'string',
           description:
-            'The correct solution adn solving step by step to answer the question, use proper industry formulas needed by the prblem',
+            `From the image description, and if it is valid please describe the user's step by step solution`,
         },
         process: {
           type: 'string',
           description:
-            'A natural-language narration of the entire solution’s logic using proper formula for the specific problem, interspersed with LaTeX expressions to represent symbolic manipulations (no numeric substitutions). Use inline math `$...$` for expressions within sentences and display math `$$...$$` for standalone equations. For example: "We start with $$ax + b = 0$$, isolate $x$ by subtracting $b$ and dividing by $a$."',
+            `Now show me a step by step solution on how the problem you asked should actually be done for us to compare the user's solution. Use inline math \`$...$\` for expressions within sentences and display math \`$$...$$\` for standalone equations. For example: "We start with $$ax + b = 0$$, isolate $x$ by subtracting $b$ and dividing by $a$."`,
         },
         where_wrong: {
           type: 'array',
           description:
-            "List of strings describing each incorrect step or misconception (e.g., 'Incorrect variable substitution in step 2', 'Misapplied distributive property in step 4'). Use plain text; do not include numeric examples.",
+            "Describe the steps where the user went wrong to validate their solution and for them to learn from",
           items: {
             type: 'string',
           },
@@ -60,7 +65,7 @@ const validateSolution: ChatCompletionTool = {
           },
         },
       },
-      required: ['user_solution', 'process', 'where_wrong', 'steps'],
+      required: ["image_description", 'user_solution', 'process', 'where_wrong', 'steps'],
       additionalProperties: false,
     },
   },

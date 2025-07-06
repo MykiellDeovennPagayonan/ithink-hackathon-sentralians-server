@@ -22,7 +22,7 @@ async function callOpenAIFunction(
   console.log('Outgoing Messages:', JSON.stringify(messages, null, 2));
 
   const completion = await openaiClient.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'gpt-4o',
     messages,
     tools: [tool],
     max_tokens: 15010,
@@ -58,7 +58,11 @@ router.post(
         {
           role: 'system',
           content:
-            'You are a helpful assistant that always returns exactly one function call payload for math operations.',
+            'You are a helpful assistant that always returns exactly one function call to validate my solution to your question',
+        },
+        {
+          role: 'assistant',
+          content: `Here's the question I need you to solve:\n\n${question}`,
         },
         {
           role: 'user',
@@ -66,7 +70,7 @@ router.post(
             { type: 'image_url', image_url: { url: image_url } },
             {
               type: 'text',
-              text: `Validate the following solution for question:\n${question}`,
+              text: `Here's my solution to the problem you asked. Is it correct?`,
             },
           ],
         },
@@ -172,26 +176,34 @@ router.post(
         return;
       }
 
-      const contentElements: any[] = [];
-      if (image_url) {
-        contentElements.push({
-          type: 'image_url',
-          image_url: { url: image_url },
-        });
-      }
-      contentElements.push({
-        type: 'text',
-        text: `Solve the following problem and return the detailed process (logic and LaTeX) plus steps.\nQuestion:\n${question}`,
-      });
-
       const messages: ChatCompletionMessageParam[] = [
         {
           role: 'system',
           content:
             'You are a helpful assistant that always returns exactly one function call payload for math operations.',
         },
-        { role: 'user', content: contentElements },
+        {
+          role: 'user',
+          content: `I need to solve this problem:\n\n${question}`,
+        },
       ];
+
+      const userContent: any[] = [];
+      if (image_url) {
+        userContent.push({
+          type: 'image_url',
+          image_url: { url: image_url },
+        });
+      }
+      userContent.push({
+        type: 'text',
+        text: `Please solve this step by step.`,
+      });
+
+      messages.push({
+        role: 'user',
+        content: userContent,
+      });
 
       const message = await callOpenAIFunction(messages, solveProblem);
 
@@ -222,7 +234,6 @@ router.post(
         return;
       }
 
-      // Step 1: Rewrite question to Wolfram query via OpenAI
       const firstResponse = await callOpenAIFunction(
         [
           {
