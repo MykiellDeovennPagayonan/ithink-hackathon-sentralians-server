@@ -11,6 +11,12 @@ import generateProblems from '../utils/function-calling-tools/generateProblems';
 import solveProblem from '../utils/function-calling-tools/solveProblem';
 import askWolfram from '../utils/function-calling-tools/askWolfram';
 
+interface ScoringCriteria {
+  given: number;
+  solution: number;
+  finalAnswer: number;
+}
+
 const router: Router = express.Router();
 
 const WOLFRAM_APP_ID = process.env.WOLFRAM_APP_ID || 'YOUR_WOLFRAM_APP_ID_HERE';
@@ -46,7 +52,9 @@ router.post(
   '/validate-solution',
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { question, image_url } = req.body;
+      // Destructure scoringCriteria from the request body
+      const { question, image_url, scoringCriteria } = req.body;
+
       if (!question || !image_url) {
         res
           .status(400)
@@ -54,11 +62,20 @@ router.post(
         return;
       }
 
+      // Create the scoring instruction string if criteria is provided
+      const scoringInstruction = scoringCriteria
+        ? `\n\nPlease score the solution based on the following criteria:
+        - Given: ${scoringCriteria.given} points
+        - Solution Process: ${scoringCriteria.solution} points
+        - Final Answer: ${scoringCriteria.finalAnswer} points
+        Sum up the points for a total score.`
+        : '';
+
       const messages: ChatCompletionMessageParam[] = [
         {
           role: 'system',
           content:
-            'You are a helpful assistant that always returns exactly one function call to validate my solution to your question',
+            `You are a helpful assistant that always returns exactly one function call to validate my solution to your question. ${scoringInstruction}`, 
         },
         {
           role: 'assistant',
@@ -70,7 +87,7 @@ router.post(
             { type: 'image_url', image_url: { url: image_url } },
             {
               type: 'text',
-              text: `Here's my solution to the problem you asked. Is it correct?`,
+              text: `Here's my solution to the problem you asked. Is it correct? Please evaluate and score it.`,
             },
           ],
         },
